@@ -2,9 +2,11 @@ import cv2
 import sys
 from pathlib import Path
 import numpy as np
+from attendance_logic import is_valid_student_name
 
-MODEL_PATH = Path("face_detection_yunet_2023mar.onnx")
-FACES_DIR = Path("faces")
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_PATH = BASE_DIR / "face_detection_yunet_2023mar.onnx"
+FACES_DIR = BASE_DIR / "faces"
 FRAME_SIZE = (640, 480)
 SCORE_THRESHOLD = 0.9
 NMS_THRESHOLD = 0.3
@@ -16,9 +18,10 @@ if not MODEL_PATH.exists():
     print(f"ERROR: {MODEL_PATH} not found.")
     sys.exit(1)
 
-name = input("Enter student name: ").strip()
-if not name:
-    print("ERROR: Student name cannot be empty.")
+name = input("Enter student name or ID (letters, numbers, spaces, . _ -; max 64 chars): ").strip()
+if not is_valid_student_name(name):
+    print("ERROR: Invalid name/ID. Use letters, numbers, spaces, dots, underscores, or hyphens (max 64 characters).")
+    print("Path separators and special characters are not allowed.")
     sys.exit(1)
 
 student_dir = FACES_DIR / name
@@ -65,7 +68,9 @@ try:
                 gray = cv2.resize(gray, (200, 200), interpolation=cv2.INTER_AREA)
 
                 filename = student_dir / f"{start_number + saved + 1:04d}.jpg"
-                cv2.imwrite(str(filename), gray)
+                if not cv2.imwrite(str(filename), gray):
+                    print(f"ERROR: Could not save enrollment image: {filename}")
+                    break
                 saved += 1
 
                 cv2.rectangle(frame, (x, y), (x2, y2), (0, 255, 0), 2)
