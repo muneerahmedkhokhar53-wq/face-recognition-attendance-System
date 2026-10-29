@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import numpy as np
+from attendance_logic import resolve_known_identity
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
@@ -208,12 +209,31 @@ try:
                         label, score = recognizer.predict(gray)
                     except cv2.error:
                         label, score = -1, 999.0
-                    name = labels.get(label, "Unknown")
+                    name = resolve_known_identity(
+                        label, score, labels, CONFIDENCE_THRESHOLD
+                    )
 
                     if locked_name is not None:
-                        last_face_time = time.time()
-                        draw_box(frame, x, y, fw, fh, f"{locked_name} - LOCKED", score, GREEN)
-                    elif score < CONFIDENCE_THRESHOLD:
+                        if name == locked_name:
+                            # Refresh the lock only when the current face still matches
+                            # the recognized identity; a different person must not inherit it.
+                            last_face_time = time.time()
+                            draw_box(
+                                frame, x, y, fw, fh,
+                                f"{locked_name} - LOCKED", score, GREEN
+                            )
+                        else:
+                            # Drop the old identity immediately if the face no longer
+                            # matches, then require the new identity to pass confirmation.
+                            locked_name = None
+                            locked_score = None
+                            candidate_name = None
+                            candidate_count = 0
+                            draw_box(
+                                frame, x, y, fw, fh,
+                                "IDENTITY CHANGED - VERIFY", score, YELLOW
+                            )
+                    elif name is not None:
                         if name == candidate_name:
                             candidate_count += 1
                         else:
