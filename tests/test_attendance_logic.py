@@ -1,6 +1,6 @@
 import unittest
 
-from attendance_logic import is_valid_student_name, resolve_known_identity
+from attendance_logic import is_valid_student_name, load_marked_students, mark_attendance, resolve_known_identity
 
 
 class ResolveKnownIdentityTests(unittest.TestCase):
@@ -48,6 +48,41 @@ class ResolveKnownIdentityTests(unittest.TestCase):
         for name in ("", "   ", ".", "..", "../outside", "name/subdir", r"name\\subdir", "name:", "x" * 65, None):
             with self.subTest(name=name):
                 self.assertFalse(is_valid_student_name(name))
+
+
+class AttendanceCsvTests(unittest.TestCase):
+    def test_csv_helper_imports(self):
+        from attendance_logic import load_marked_students, mark_attendance
+        self.assertTrue(callable(load_marked_students))
+        self.assertTrue(callable(mark_attendance))
+
+
+    def test_csv_created_and_duplicate_prevented(self):
+        import csv
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "attendance.csv"
+            today = "2026-10-29"
+            self.assertEqual(load_marked_students(path, today), set())
+            self.assertTrue(mark_attendance(path, "Alice", today, "09:00:00"))
+            self.assertFalse(mark_attendance(path, "Alice", today, "09:30:00"))
+            with path.open(newline="", encoding="utf-8") as file:
+                self.assertEqual(len(list(csv.reader(file))), 2)
+            self.assertEqual(load_marked_students(path, today), {"Alice"})
+
+    def test_malformed_header_is_reported(self):
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "attendance.csv"
+            path.write_text("Student,Day\\nAlice,2026-10-29\\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "Name, Date, and Time"):
+                load_marked_students(path, "2026-10-29")
+            with self.assertRaisesRegex(ValueError, "Name, Date, and Time"):
+                mark_attendance(path, "Bob", "2026-10-29", "10:00:00")
 
 
 if __name__ == "__main__":

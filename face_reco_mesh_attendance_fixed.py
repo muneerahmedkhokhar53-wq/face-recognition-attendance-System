@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import numpy as np
-from attendance_logic import resolve_known_identity
+from attendance_logic import load_marked_students, mark_attendance, resolve_known_identity
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
@@ -44,9 +44,13 @@ for p in [MODEL_PATH, RECOGNIZER_PATH, LABELS_PATH, LANDMARKER_PATH]:
         sys.exit(1)
 
 ATTENDANCE_FOLDER.mkdir(exist_ok=True)
-if not ATTENDANCE_PATH.exists():
-    with open(ATTENDANCE_PATH, "w", newline="", encoding="utf-8") as f:
-        csv.writer(f).writerow(["Name", "Date", "Time"])
+try:
+    today = datetime.now().strftime("%Y-%m-%d")
+    marked_students = load_marked_students(ATTENDANCE_PATH, today)
+except (OSError, ValueError) as e:
+    print(f"ERROR: Cannot read attendance file {ATTENDANCE_PATH}: {e}")
+    print("Check file permissions and ensure its header is Name, Date, Time.")
+    sys.exit(1)
 
 # ================= LOAD LABELS / LBPH =================
 try:
@@ -141,16 +145,6 @@ detector = cv2.FaceDetectorYN.create(
 )
 
 # ================= ATTENDANCE STATE =================
-today = datetime.now().strftime("%Y-%m-%d")
-marked_students = set()
-try:
-    with open(ATTENDANCE_PATH, "r", newline="", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            if row.get("Date") == today and row.get("Name"):
-                marked_students.add(row["Name"])
-except (OSError, csv.Error):
-    pass
-
 candidate_name = None
 candidate_count = 0
 locked_name = None
@@ -264,10 +258,19 @@ try:
                             if locked_name not in marked_students:
                                 mark_date = datetime.now().strftime("%Y-%m-%d")
                                 mark_time = datetime.now().strftime("%H:%M:%S")
-                                with open(ATTENDANCE_PATH, "a", newline="", encoding="utf-8") as f:
-                                    csv.writer(f).writerow([locked_name, mark_date, mark_time])
-                                marked_students.add(locked_name)
-                                print(f"Attendance marked: {locked_name} at {mark_time}")
+                                try:
+                                    was_written = mark_attendance(
+                                        ATTENDANCE_PATH, locked_name, mark_date, mark_time
+                                    )
+                                except (OSError, ValueError) as e:
+                                    print(f"ERROR: Could not save attendance: {e}")
+                                    put_text(frame, "SAVE ERROR - CHECK FILE", (15, 150), RED, 0.55)
+                                else:
+                                    marked_students.add(locked_name)
+                                    if was_written:
+                                        print(f"Attendance marked: {locked_name} at {mark_time}")
+                                    else:
+                                        print(f"Already marked today: {locked_name}")
                             else:
                                 print(f"Already marked today: {locked_name}")
                     else:
