@@ -279,6 +279,16 @@ try:
                         candidate_name = None
                         candidate_count = 0
                         draw_box(frame, x, y, fw, fh, "UNKNOWN", score, RED)
+                else:
+                    # A too-small or invalid face is not a consecutive confirmation frame.
+                    if locked_name is None:
+                        candidate_name = None
+                        candidate_count = 0
+            else:
+                # Empty crops must not preserve a previous candidate confirmation.
+                if locked_name is None:
+                    candidate_name = None
+                    candidate_count = 0
 
         # Unlock only after face disappears
         if SINGLE_PERSON_MODE and locked_name is not None:
