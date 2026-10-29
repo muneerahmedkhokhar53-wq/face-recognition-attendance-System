@@ -115,6 +115,10 @@ GitHub Actions checks unit tests and Python syntax on Python 3.10–3.12. These 
 - Face Mesh landmarks are not proof of identity.
 - This repository should not be treated as a production security system or an unbiased biometric solution.
 
+## Local webcam validation
+
+Use the [Local Webcam Validation Guide](docs/testing.md) for a step-by-step checklist covering known and unknown faces, identity switching, multiple faces, duplicate attendance, face-loss unlocking, camera failures, and safe CSV inspection. The guide separates automated checks from manual hardware checks and includes a test-results template.
+
 ## Recommended validation before real use
 
 - Test only with consented, representative samples under different lighting and camera conditions.
