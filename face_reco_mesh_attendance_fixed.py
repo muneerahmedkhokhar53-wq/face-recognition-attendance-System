@@ -44,9 +44,13 @@ for p in [MODEL_PATH, RECOGNIZER_PATH, LABELS_PATH, LANDMARKER_PATH]:
         sys.exit(1)
 
 ATTENDANCE_FOLDER.mkdir(exist_ok=True)
-if not ATTENDANCE_PATH.exists():
-    with open(ATTENDANCE_PATH, "w", newline="", encoding="utf-8") as f:
-        csv.writer(f).writerow(["Name", "Date", "Time"])
+try:
+    today = datetime.now().strftime("%Y-%m-%d")
+    marked_students = load_marked_students(ATTENDANCE_PATH, today)
+except (OSError, ValueError) as e:
+    print(f"ERROR: Cannot read attendance file {ATTENDANCE_PATH}: {e}")
+    print("Check file permissions and ensure its header is Name, Date, Time.")
+    sys.exit(1)
 
 # ================= LOAD LABELS / LBPH =================
 try:
@@ -141,16 +145,6 @@ detector = cv2.FaceDetectorYN.create(
 )
 
 # ================= ATTENDANCE STATE =================
-today = datetime.now().strftime("%Y-%m-%d")
-marked_students = set()
-try:
-    with open(ATTENDANCE_PATH, "r", newline="", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            if row.get("Date") == today and row.get("Name"):
-                marked_students.add(row["Name"])
-except (OSError, csv.Error):
-    pass
-
 candidate_name = None
 candidate_count = 0
 locked_name = None
