@@ -258,10 +258,19 @@ try:
                             if locked_name not in marked_students:
                                 mark_date = datetime.now().strftime("%Y-%m-%d")
                                 mark_time = datetime.now().strftime("%H:%M:%S")
-                                with open(ATTENDANCE_PATH, "a", newline="", encoding="utf-8") as f:
-                                    csv.writer(f).writerow([locked_name, mark_date, mark_time])
-                                marked_students.add(locked_name)
-                                print(f"Attendance marked: {locked_name} at {mark_time}")
+                                try:
+                                    was_written = mark_attendance(
+                                        ATTENDANCE_PATH, locked_name, mark_date, mark_time
+                                    )
+                                except (OSError, ValueError) as e:
+                                    print(f"ERROR: Could not save attendance: {e}")
+                                    put_text(frame, "SAVE ERROR - CHECK FILE", (15, 150), RED, 0.55)
+                                else:
+                                    marked_students.add(locked_name)
+                                    if was_written:
+                                        print(f"Attendance marked: {locked_name} at {mark_time}")
+                                    else:
+                                        print(f"Already marked today: {locked_name}")
                             else:
                                 print(f"Already marked today: {locked_name}")
                     else:
