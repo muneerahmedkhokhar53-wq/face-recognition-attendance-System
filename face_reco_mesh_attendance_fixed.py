@@ -280,12 +280,12 @@ try:
                         candidate_count = 0
                         draw_box(frame, x, y, fw, fh, "UNKNOWN", score, RED)
                 else:
-                    # A too-small or invalid face is not a consecutive confirmation frame.
+                    # An empty crop is not a consecutive confirmation frame.
                     if locked_name is None:
                         candidate_name = None
                         candidate_count = 0
             else:
-                # Empty crops must not preserve a previous candidate confirmation.
+                # A too-small or invalid face must reset confirmation.
                 if locked_name is None:
                     candidate_name = None
                     candidate_count = 0
