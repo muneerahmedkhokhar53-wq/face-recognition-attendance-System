@@ -12,6 +12,34 @@ A Python computer-vision prototype for recording attendance with a webcam. The p
 - OpenCV image processing with YuNet, LBPH, and MediaPipe components
 - Local-first workflow for a computer-vision learning project
 
+## System Workflow Diagram
+
+The diagram below shows the intended end-to-end workflow: enroll consented faces, train the local recognizer, then run webcam recognition and record attendance locally.
+
+```mermaid
+flowchart TD
+    A["Participant enrollment<br/>add_student.py"] --> B["Consented face samples<br/>faces/<label>/*.jpg"]
+    B --> C["Train recognizer<br/>train_faces.py"]
+    C --> D["Local LBPH model<br/>face_recognizer.yml"]
+    C --> E["Label mapping<br/>labels.npy"]
+
+    F["Webcam frames"] --> G["YuNet face detection"]
+    G --> H["Face crop and preprocessing"]
+    H --> I["MediaPipe face landmark processing"]
+    I --> J["LBPH identity prediction"]
+    D --> J
+    E --> J
+    J --> K{"Match passes<br/>configured threshold?"}
+    K -- "No / unknown" --> L["Do not assign an identity"]
+    K -- "Yes" --> M["Check duplicate attendance"]
+    M --> N{"Already recorded?"}
+    N -- "Yes" --> O["Skip duplicate entry"]
+    N -- "No" --> P["Write ID and timestamp"]
+    P --> Q["Local attendance/attendance.csv"]
+```
+
+> **Note:** This is a workflow diagram, not a guarantee of recognition accuracy. Exact processing order and threshold behavior depend on the implementation and configuration.
+
 ## Technology
 
 - Python 3.10–3.12 (dependency versions are pinned in `requirements.txt`)
@@ -42,7 +70,7 @@ Create and activate a virtual environment.
 
 ```powershell
 py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
+.\\.venv\\Scripts\\Activate.ps1
 ```
 
 **macOS / Linux:**
