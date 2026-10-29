@@ -1,6 +1,6 @@
 import unittest
 
-from attendance_logic import resolve_known_identity
+from attendance_logic import is_valid_student_name, resolve_known_identity
 
 
 class ResolveKnownIdentityTests(unittest.TestCase):
@@ -19,6 +19,9 @@ class ResolveKnownIdentityTests(unittest.TestCase):
     def test_rejects_score_above_threshold(self):
         self.assertIsNone(resolve_known_identity(0, 95.0, self.labels, 80.0))
 
+    def test_rejects_negative_score(self):
+        self.assertIsNone(resolve_known_identity(0, -1, self.labels, 80.0))
+
     def test_rejects_unknown_label(self):
         self.assertIsNone(resolve_known_identity(99, 20.0, self.labels, 80.0))
 
@@ -34,6 +37,17 @@ class ResolveKnownIdentityTests(unittest.TestCase):
     def test_rejects_invalid_label_or_threshold(self):
         self.assertIsNone(resolve_known_identity("not-a-label", 20.0, self.labels, 80.0))
         self.assertIsNone(resolve_known_identity(0, 20.0, self.labels, "invalid"))
+        self.assertIsNone(resolve_known_identity(0, 20.0, self.labels, 0))
+
+    def test_valid_student_names(self):
+        for name in ("Muneer Ahmed", "23MTE053", "student-01", "Ahmed_2.0"):
+            with self.subTest(name=name):
+                self.assertTrue(is_valid_student_name(name))
+
+    def test_rejects_unsafe_student_names(self):
+        for name in ("", "   ", ".", "..", "../outside", "name/subdir", r"name\\subdir", "name:", "x" * 65, None):
+            with self.subTest(name=name):
+                self.assertFalse(is_valid_student_name(name))
 
 
 if __name__ == "__main__":
