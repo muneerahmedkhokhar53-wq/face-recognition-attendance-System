@@ -45,7 +45,7 @@ class ResolveKnownIdentityTests(unittest.TestCase):
                 self.assertTrue(is_valid_student_name(name))
 
     def test_rejects_unsafe_student_names(self):
-        for name in ("", "   ", ".", "..", "../outside", "name/subdir", r"name\\subdir", "name:", "x" * 65, None):
+        for name in ("", "   ", ".", "..", "../outside", "name/subdir", r"name\\subdir", "name:", "x" * 65, "name.", "name ", "CON", "nul.txt", "COM1", "LPT9.log", None):
             with self.subTest(name=name):
                 self.assertFalse(is_valid_student_name(name))
 

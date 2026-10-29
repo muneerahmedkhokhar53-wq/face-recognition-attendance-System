@@ -11,8 +11,19 @@ def is_valid_student_name(name):
     """Allow simple labels while preventing path separators and traversal."""
     if not isinstance(name, str):
         return False
+    if name != name.strip():
+        return False
     name = name.strip()
     if not name or name in {".", ".."} or len(name) > 64:
+        return False
+    if name.endswith((".", " ")):
+        return False
+    # Windows reserves these device names, even when followed by an extension.
+    device_name = name.split(".", 1)[0].upper()
+    reserved_names = {"CON", "PRN", "AUX", "NUL"}
+    reserved_names.update(f"COM{i}" for i in range(1, 10))
+    reserved_names.update(f"LPT{i}" for i in range(1, 10))
+    if device_name in reserved_names:
         return False
     return re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 _.-]{0,63}", name) is not None
 
