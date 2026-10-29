@@ -11,6 +11,8 @@ def is_valid_student_name(name):
     """Allow simple labels while preventing path separators and traversal."""
     if not isinstance(name, str):
         return False
+    if name != name.strip():
+        return False
     name = name.strip()
     if not name or name in {".", ".."} or len(name) > 64:
         return False
