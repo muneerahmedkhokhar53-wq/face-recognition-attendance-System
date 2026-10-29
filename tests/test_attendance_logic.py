@@ -50,5 +50,12 @@ class ResolveKnownIdentityTests(unittest.TestCase):
                 self.assertFalse(is_valid_student_name(name))
 
 
+class AttendanceCsvTests(unittest.TestCase):
+    def test_csv_helper_imports(self):
+        from attendance_logic import load_marked_students, mark_attendance
+        self.assertTrue(callable(load_marked_students))
+        self.assertTrue(callable(mark_attendance))
+
+
 if __name__ == "__main__":
     unittest.main()
