@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# Local datasets and biometric-derived artifacts
+/faces/
+/attendance/
+/attendance.xlsx
+/face_recognizer.yml
+/labels.npy
+
+# Local outputs and editor files
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
