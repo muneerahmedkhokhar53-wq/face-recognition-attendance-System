@@ -72,13 +72,26 @@ class AttendanceCsvTests(unittest.TestCase):
                 self.assertEqual(len(list(csv.reader(file))), 2)
             self.assertEqual(load_marked_students(path, today), {"Alice"})
 
+    def test_duplicate_detection_normalizes_whitespace_and_utf8_bom(self):
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "attendance.csv"
+            path.write_text(
+                "Name,Date,Time\n Alice , 2026-10-29 ,09:00:00\n",
+                encoding="utf-8-sig",
+            )
+            self.assertEqual(load_marked_students(path, "2026-10-29"), {"Alice"})
+            self.assertFalse(mark_attendance(path, "Alice", "2026-10-29", "09:30:00"))
+
     def test_malformed_header_is_reported(self):
         import tempfile
         from pathlib import Path
 
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "attendance.csv"
-            path.write_text("Student,Day\\nAlice,2026-10-29\\n", encoding="utf-8")
+            path.write_text("Student,Day\nAlice,2026-10-29\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "Name, Date, and Time"):
                 load_marked_students(path, "2026-10-29")
             with self.assertRaisesRegex(ValueError, "Name, Date, and Time"):

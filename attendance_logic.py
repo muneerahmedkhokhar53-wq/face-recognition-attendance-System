@@ -51,7 +51,7 @@ def load_marked_students(path, today):
             return {
                 row["Name"].strip()
                 for row in reader
-                if row.get("Name") and row.get("Date") == today
+                if row.get("Name") and row.get("Date", "").strip() == today
             }
     except csv.Error as exc:
         raise ValueError(f"Attendance CSV is malformed: {exc}") from exc
@@ -70,7 +70,7 @@ def mark_attendance(path, name, date, time):
             if not reader.fieldnames or not set(ATTENDANCE_COLUMNS).issubset(reader.fieldnames):
                 raise ValueError("Attendance CSV needs Name, Date, and Time columns.")
             for row in reader:
-                if row.get("Name") == name and row.get("Date") == date:
+                if row.get("Name", "").strip() == name.strip() and row.get("Date", "").strip() == date.strip():
                     return False
             file.seek(0, 2)
             csv.writer(file).writerow([name, date, time])
