@@ -12,11 +12,12 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 # ================= CONFIG =================
-MODEL_PATH = Path("face_detection_yunet_2023mar.onnx")
-RECOGNIZER_PATH = Path("face_recognizer.yml")
-LABELS_PATH = Path("labels.npy")
-LANDMARKER_PATH = Path("face_landmarker.task")
-ATTENDANCE_FOLDER = Path("attendance")
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_PATH = BASE_DIR / "face_detection_yunet_2023mar.onnx"
+RECOGNIZER_PATH = BASE_DIR / "face_recognizer.yml"
+LABELS_PATH = BASE_DIR / "labels.npy"
+LANDMARKER_PATH = BASE_DIR / "face_landmarker.task"
+ATTENDANCE_FOLDER = BASE_DIR / "attendance"
 ATTENDANCE_PATH = ATTENDANCE_FOLDER / "attendance.csv"
 FRAME_SIZE = (640, 480)
 SCORE_THRESHOLD = 0.9
@@ -48,8 +49,20 @@ if not ATTENDANCE_PATH.exists():
         csv.writer(f).writerow(["Name", "Date", "Time"])
 
 # ================= LOAD LABELS / LBPH =================
-labels_data = np.load(LABELS_PATH, allow_pickle=True).item()
-labels = {int(k): str(v) for k, v in labels_data.items()}
+try:
+    labels_data = np.load(LABELS_PATH, allow_pickle=True).item()
+    if not isinstance(labels_data, dict) or not labels_data:
+        raise ValueError("label file must contain a non-empty dictionary")
+    labels = {}
+    for key, value in labels_data.items():
+        label_id = int(key)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("each label must map to a non-empty string")
+        labels[label_id] = value.strip()
+except (OSError, ValueError, TypeError, AttributeError, EOFError) as e:
+    print(f"ERROR: Could not read a valid label map from {LABELS_PATH}: {e}")
+    print("Regenerate the local model files with: python train_faces.py")
+    sys.exit(1)
 
 try:
     recognizer = cv2.face.LBPHFaceRecognizer_create()
