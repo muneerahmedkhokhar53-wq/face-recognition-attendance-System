@@ -77,3 +77,27 @@ def mark_attendance(path, name, date, time):
         return True
     except csv.Error as exc:
         raise ValueError(f"Attendance CSV is malformed: {exc}") from exc
+
+
+def update_confirmation(candidate_name, candidate_count, observed_name, required_frames):
+    """Advance multi-frame identity confirmation.
+
+    Returns (candidate_name, candidate_count, confirmed). An absent/invalid
+    observation resets the candidate so frames from separate appearances
+    cannot be combined.
+    """
+    if not isinstance(required_frames, int) or required_frames < 1:
+        raise ValueError("required_frames must be a positive integer")
+    if not isinstance(observed_name, str) or not observed_name.strip():
+        return None, 0, False
+
+    observed_name = observed_name.strip()
+    if observed_name == candidate_name:
+        try:
+            candidate_count = max(0, int(candidate_count)) + 1
+        except (TypeError, ValueError, OverflowError):
+            candidate_count = 1
+    else:
+        candidate_count = 1
+
+    return observed_name, candidate_count, candidate_count >= required_frames

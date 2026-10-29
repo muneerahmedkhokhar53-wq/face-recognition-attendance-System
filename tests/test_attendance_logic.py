@@ -1,6 +1,6 @@
 import unittest
 
-from attendance_logic import is_valid_student_name, load_marked_students, mark_attendance, resolve_known_identity
+from attendance_logic import is_valid_student_name, load_marked_students, mark_attendance, resolve_known_identity, update_confirmation
 
 
 class ResolveKnownIdentityTests(unittest.TestCase):
@@ -83,6 +83,37 @@ class AttendanceCsvTests(unittest.TestCase):
                 load_marked_students(path, "2026-10-29")
             with self.assertRaisesRegex(ValueError, "Name, Date, and Time"):
                 mark_attendance(path, "Bob", "2026-10-29", "10:00:00")
+
+
+
+class RecognitionConfirmationTests(unittest.TestCase):
+    def test_requires_consecutive_matching_frames(self):
+        candidate, count, confirmed = update_confirmation(None, 0, "Alice", 3)
+        self.assertEqual((candidate, count, confirmed), ("Alice", 1, False))
+        candidate, count, confirmed = update_confirmation(candidate, count, "Alice", 3)
+        self.assertEqual((candidate, count, confirmed), ("Alice", 2, False))
+        candidate, count, confirmed = update_confirmation(candidate, count, "Alice", 3)
+        self.assertEqual((candidate, count, confirmed), ("Alice", 3, True))
+
+    def test_identity_change_restarts_confirmation(self):
+        candidate, count, _ = update_confirmation("Alice", 5, "Bob", 3)
+        self.assertEqual((candidate, count), ("Bob", 1))
+        candidate, count, confirmed = update_confirmation(candidate, count, "Bob", 3)
+        self.assertEqual((candidate, count, confirmed), ("Bob", 2, False))
+
+    def test_missing_or_unknown_frame_resets_candidate(self):
+        for observed in (None, "", "   "):
+            with self.subTest(observed=observed):
+                self.assertEqual(
+                    update_confirmation("Alice", 2, observed, 3),
+                    (None, 0, False),
+                )
+
+    def test_invalid_confirmation_length_is_rejected(self):
+        for frames in (0, -1, 1.5, None):
+            with self.subTest(frames=frames):
+                with self.assertRaises(ValueError):
+                    update_confirmation(None, 0, "Alice", frames)
 
 
 if __name__ == "__main__":

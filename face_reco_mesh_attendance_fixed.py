@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import numpy as np
-from attendance_logic import load_marked_students, mark_attendance, resolve_known_identity
+from attendance_logic import load_marked_students, mark_attendance, resolve_known_identity, update_confirmation
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
@@ -170,9 +170,13 @@ try:
         display_date = now.strftime("%d-%m-%Y")
         display_time = now.strftime("%H:%M:%S")
 
-        ret, frame = webcam.read()
+        try:
+            ret, frame = webcam.read()
+        except cv2.error as e:
+            print(f"ERROR: Webcam read failed: {e}")
+            break
         if not ret:
-            print("ERROR: Could not read webcam.")
+            print("ERROR: Webcam returned no frame; stopping safely.")
             break
         h, w = frame.shape[:2]
 
@@ -241,14 +245,12 @@ try:
                                 "IDENTITY CHANGED - VERIFY", score, YELLOW
                             )
                     elif name is not None:
-                        if name == candidate_name:
-                            candidate_count += 1
-                        else:
-                            candidate_name = name
-                            candidate_count = 1
+                        candidate_name, candidate_count, confirmed = update_confirmation(
+                            candidate_name, candidate_count, name, CONFIRM_FRAMES
+                        )
                         draw_box(frame, x, y, fw, fh, f"Checking: {name}", score, YELLOW)
 
-                        if candidate_count >= CONFIRM_FRAMES:
+                        if confirmed:
                             locked_name = candidate_name
                             locked_score = score
                             last_face_time = time.time()
@@ -277,6 +279,16 @@ try:
                         candidate_name = None
                         candidate_count = 0
                         draw_box(frame, x, y, fw, fh, "UNKNOWN", score, RED)
+                else:
+                    # An empty crop is not a consecutive confirmation frame.
+                    if locked_name is None:
+                        candidate_name = None
+                        candidate_count = 0
+            else:
+                # A too-small or invalid face must reset confirmation.
+                if locked_name is None:
+                    candidate_name = None
+                    candidate_count = 0
 
         # Unlock only after face disappears
         if SINGLE_PERSON_MODE and locked_name is not None:
