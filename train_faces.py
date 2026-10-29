@@ -3,9 +3,10 @@ import sys
 from pathlib import Path
 import numpy as np
 
-FACES_DIR = Path("faces")
-RECOGNIZER_PATH = Path("face_recognizer.yml")
-LABELS_PATH = Path("labels.npy")
+BASE_DIR = Path(__file__).resolve().parent
+FACES_DIR = BASE_DIR / "faces"
+RECOGNIZER_PATH = BASE_DIR / "face_recognizer.yml"
+LABELS_PATH = BASE_DIR / "labels.npy"
 
 if not FACES_DIR.exists():
     print("ERROR: faces folder not found.")
@@ -42,7 +43,8 @@ for label_id, student_dir in enumerate(student_dirs):
         label_ids.append(label_id)
 
 if not images:
-    print("ERROR: No usable images.")
+    print("ERROR: No usable enrollment images were found.")
+    print("Check that faces/<student-name-or-id>/ contains readable JPG, JPEG, or PNG images.")
     sys.exit(1)
 
 recognizer = cv2.face.LBPHFaceRecognizer_create(
@@ -51,8 +53,12 @@ recognizer = cv2.face.LBPHFaceRecognizer_create(
 
 print(f"Training with {len(images)} images...")
 recognizer.train(images, np.array(label_ids, dtype=np.int32))
-recognizer.write(str(RECOGNIZER_PATH))
-np.save(LABELS_PATH, labels, allow_pickle=True)
+try:
+    recognizer.write(str(RECOGNIZER_PATH))
+    np.save(LABELS_PATH, labels, allow_pickle=True)
+except (OSError, cv2.error, ValueError) as e:
+    print(f"ERROR: Could not save trained model files: {e}")
+    sys.exit(1)
 
 print("TRAINING COMPLETE")
 print(f"Created: {RECOGNIZER_PATH}")
