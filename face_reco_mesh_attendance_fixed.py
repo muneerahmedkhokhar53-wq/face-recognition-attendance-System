@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import numpy as np
-from attendance_logic import resolve_known_identity
+from attendance_logic import load_marked_students, mark_attendance, resolve_known_identity
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
