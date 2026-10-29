@@ -79,7 +79,7 @@ class AttendanceCsvTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "attendance.csv"
             path.write_text(
-                "Name,Date,Time\\n Alice , 2026-10-29 ,09:00:00\\n",
+                "Name,Date,Time\n Alice , 2026-10-29 ,09:00:00\n",
                 encoding="utf-8-sig",
             )
             self.assertEqual(load_marked_students(path, "2026-10-29"), {"Alice"})
@@ -91,7 +91,7 @@ class AttendanceCsvTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "attendance.csv"
-            path.write_text("Student,Day\\nAlice,2026-10-29\\n", encoding="utf-8")
+            path.write_text("Student,Day\nAlice,2026-10-29\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "Name, Date, and Time"):
                 load_marked_students(path, "2026-10-29")
             with self.assertRaisesRegex(ValueError, "Name, Date, and Time"):
